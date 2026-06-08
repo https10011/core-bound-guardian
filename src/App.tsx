@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useAuth } from './hooks/useAuth';
 import { supabase } from './lib/supabase';
 import { Page } from './types';
@@ -37,7 +37,7 @@ export default function App() {
 
   if (!user) return <Auth />;
 
-  const pages: Record<Page, JSX.Element> = {
+  const pages: Record<Page, React.ReactNode> = {
     dashboard: <Dashboard userId={user.id} onNavigate={setActivePage} />,
     vault: <MemoryVault userId={user.id} />,
     ourstory: <OurStory userId={user.id} />,
