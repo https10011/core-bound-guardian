@@ -1,6 +1,8 @@
 name: Build APK
 
 on:
+  push:
+    branches: [ main ]
   workflow_dispatch:
 
 jobs:
@@ -10,38 +12,41 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - uses: actions/setup-node@v4
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v2
         with:
-          node-version: 20
+          bun-version: latest
 
-      - uses: actions/setup-java@v4
+      - name: Setup Java
+        uses: actions/setup-java@v4
         with:
-          distribution: temurin
-          java-version: 17
+          distribution: 'temurin'
+          java-version: '17'
+          cache: 'gradle'
 
       - name: Install dependencies
-        run: npm install
+        run: bun install
 
-      - name: Build web app
-        run: npm run build
+      - name: Build Web App
+        run: bun run build
 
-      - name: Add Android Platform
+      - name: Add Android Platform (if missing)
         run: |
           if [ ! -d "android" ]; then
-            npx cap add android
+            bunx cap add android
           fi
 
       - name: Sync Capacitor
-        run: npx cap sync android
+        run: bunx cap sync android
 
-      - name: Build APK
+      - name: Build Debug APK
         run: |
           cd android
           chmod +x gradlew
-          ./gradlew assembleDebug
+          ./gradlew assembleDebug --stacktrace
 
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
-          name: app-debug
+          name: memora-debug-apk
           path: android/app/build/outputs/apk/debug/app-debug.apk
