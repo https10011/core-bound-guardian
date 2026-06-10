@@ -31,7 +31,9 @@ export default function Modal({ isOpen, onClose, title, children, size = 'md' }:
       {/* Backdrop */}
       <div
         className="absolute inset-0 animate-fadeIn"
-        style={{ background: 'rgba(255, 180, 210, 0.18)', backdropFilter: 'blur(8px)', WebkitBackdropFilter: 'blur(8px)' }}
+        // PERF: removed backdrop-filter on the modal scrim (was creating a
+        // full-screen blurred layer on every dialog open).
+        style={{ background: 'rgba(244, 114, 182, 0.28)' }}
         onClick={onClose}
       />
 
@@ -39,11 +41,10 @@ export default function Modal({ isOpen, onClose, title, children, size = 'md' }:
       <div
         className={`relative w-full ${sizeClass} rounded-3xl overflow-hidden animate-bounceIn`}
         style={{
-          background: 'rgba(255, 240, 248, 0.92)',
-          backdropFilter: 'blur(40px)',
-          WebkitBackdropFilter: 'blur(40px)',
+          background: 'rgba(255, 244, 250, 0.98)',
           border: '1px solid rgba(255, 168, 210, 0.55)',
-          boxShadow: '0 25px 60px rgba(244,114,182,0.22), 0 8px 24px rgba(244,114,182,0.12), inset 0 1px 0 rgba(255,255,255,0.90)',
+          boxShadow:
+            '0 20px 48px rgba(244,114,182,0.20), 0 6px 18px rgba(244,114,182,0.10), inset 0 1px 0 rgba(255,255,255,0.90)',
         }}
       >
         {/* Decorative top hearts */}

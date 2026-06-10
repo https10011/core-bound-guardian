@@ -20,9 +20,11 @@ export default function Sidebar({ activePage, onNavigate, partnerName }: Sidebar
     <aside
       className="hidden md:flex flex-col w-64 h-screen sticky top-0 z-20"
       style={{
-        background: 'rgba(255, 210, 232, 0.38)',
-        backdropFilter: 'blur(32px)',
-        WebkitBackdropFilter: 'blur(32px)',
+        // PERF: removed backdrop-filter (Sidebar only renders on desktop ≥md,
+        // but the same compositor stack used to be created on Android tablets
+        // and was the largest layer on screen). Solid pink with matching alpha
+        // preserves the look.
+        background: 'rgba(255, 220, 238, 0.92)',
         borderRight: '1px solid rgba(255, 168, 210, 0.40)',
         boxShadow: '2px 0 24px rgba(244,114,182,0.08)',
       }}

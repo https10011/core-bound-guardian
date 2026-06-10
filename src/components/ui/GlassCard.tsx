@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { memo } from 'react';
 
 interface GlassCardProps {
   children: React.ReactNode;
@@ -9,23 +9,31 @@ interface GlassCardProps {
   delay?: number;
 }
 
-export default function GlassCard({ children, className = '', onClick, hover = false, animate = true, delay = 0 }: GlassCardProps) {
+// PERF: GlassCard is rendered ~20-50× per screen. On Android WebView, every
+// instance previously stacked a `backdrop-filter: blur(22px)` layer, which is
+// the most expensive CSS operation on mid-range GPUs and triggers a full GPU
+// composite each scroll frame. We replace it with a higher-opacity solid pink
+// background that visually matches the frosted look, and keep only a single
+// soft shadow. The animation stays identical.
+function GlassCardImpl({
+  children,
+  className = '',
+  onClick,
+  hover = false,
+  animate = true,
+  delay = 0,
+}: GlassCardProps) {
   return (
     <div
       onClick={onClick}
-      className={`
-        rounded-2xl
-        ${animate ? 'animate-slideUp' : ''}
-        ${hover ? 'cursor-pointer transition-all duration-300 hover:scale-[1.025] hover:-translate-y-0.5' : ''}
-        ${onClick && !hover ? 'cursor-pointer' : ''}
-        ${className}
-      `}
+      className={`rounded-2xl${animate ? ' animate-slideUp' : ''}${
+        hover ? ' cursor-pointer transition-transform duration-200 active:scale-[0.985]' : ''
+      }${onClick && !hover ? ' cursor-pointer' : ''} ${className}`}
       style={{
-        background: 'rgba(255, 220, 238, 0.40)',
-        backdropFilter: 'blur(22px)',
-        WebkitBackdropFilter: 'blur(22px)',
+        background: 'rgba(255, 232, 244, 0.85)',
         border: '1px solid rgba(255, 168, 210, 0.45)',
-        boxShadow: '0 8px 32px rgba(244,114,182,0.14), 0 2px 8px rgba(244,114,182,0.08), inset 0 1px 0 rgba(255,255,255,0.75)',
+        boxShadow:
+          '0 4px 14px rgba(244,114,182,0.12), inset 0 1px 0 rgba(255,255,255,0.75)',
         animationDelay: delay ? `${delay}ms` : undefined,
         animationFillMode: 'both',
       }}
@@ -34,3 +42,5 @@ export default function GlassCard({ children, className = '', onClick, hover = f
     </div>
   );
 }
+
+export default memo(GlassCardImpl);
