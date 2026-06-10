@@ -28,11 +28,13 @@ export default function BottomNav({ activePage, onNavigate }: BottomNavProps) {
     <nav
       className="md:hidden fixed bottom-0 inset-x-0 z-20 border-t"
       style={{
-        background: 'rgba(255, 228, 242, 0.92)',
-        backdropFilter: 'blur(32px)',
-        WebkitBackdropFilter: 'blur(32px)',
+        // PERF: BottomNav is fixed and overlaps scrolling content — a
+        // backdrop-filter here forces the full underlay to re-blur on every
+        // scroll frame on Android. Solid 96%-opaque pink looks identical.
+        background: 'rgba(255, 232, 244, 0.97)',
         borderColor: 'rgba(255, 168, 210, 0.45)',
-        boxShadow: '0 -4px 24px rgba(244,114,182,0.12)',
+        boxShadow: '0 -4px 16px rgba(244,114,182,0.10)',
+        paddingBottom: 'env(safe-area-inset-bottom)',
       }}
     >
       <div className="flex items-center justify-around px-2 py-2 pb-safe">

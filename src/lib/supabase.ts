@@ -7,7 +7,6 @@
 //   supabase.from(table).delete().eq(col, val)
 //   supabase.auth.getSession() | onAuthStateChange | signInWithPassword | signUp | signOut
 
-import bcrypt from 'bcryptjs';
 import { Preferences } from '@capacitor/preferences';
 import {
   getDb,
@@ -17,6 +16,15 @@ import {
   decodeRowAfterRead,
   TABLE_COLUMNS,
 } from './db';
+
+// PERF: bcryptjs is ~80 KB minified and only needed during sign-in/sign-up,
+// which happens at most once per cold start. Lazy-import it so the initial
+// JS payload (and parse time on low-end Android) stays small.
+let _bcrypt: typeof import('bcryptjs') | null = null;
+async function bcryptLib() {
+  if (!_bcrypt) _bcrypt = (await import('bcryptjs')).default ?? (await import('bcryptjs'));
+  return _bcrypt;
+}
 
 // ─── Auth shapes (subset of @supabase/supabase-js used by this app) ──────────
 export interface ShimUser {
@@ -271,6 +279,7 @@ export const supabase = {
         const r = await db.query('SELECT id, password_hash FROM users WHERE email = ?', [email]);
         const row = r.values?.[0];
         if (!row) return { error: new Error('Invalid email or password') };
+        const bcrypt = await bcryptLib();
         const ok = await bcrypt.compare(args.password, row.password_hash);
         if (!ok) return { error: new Error('Invalid email or password') };
         cachedSession = await createSession(row.id);
@@ -289,6 +298,7 @@ export const supabase = {
         const existing = await db.query('SELECT id FROM users WHERE email = ?', [email]);
         if (existing.values?.length) return { error: new Error('An account with that email already exists') };
         const id = newId();
+        const bcrypt = await bcryptLib();
         const hash = await bcrypt.hash(args.password, 10);
         await db.run(
           'INSERT INTO users (id, email, password_hash, created_at) VALUES (?, ?, ?, ?)',
