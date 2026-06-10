@@ -178,6 +178,22 @@ async function openConnection(): Promise<Db> {
     conn = await sqlite.createConnection(DB_NAME, false, 'no-encryption', DB_VERSION, false);
   }
   await conn.open();
+  // PERF PRAGMA tuning: WAL halves write latency on Android, NORMAL fsync
+  // is safe for an offline single-user DB, MEMORY temp store avoids disk
+  // for sorts, larger cache helps the cold-start dashboard query batch.
+  // Wrapped in try/catch because jeep-sqlite (web fallback) ignores some
+  // PRAGMAs.
+  try {
+    await conn.execute(`
+      PRAGMA journal_mode=WAL;
+      PRAGMA synchronous=NORMAL;
+      PRAGMA temp_store=MEMORY;
+      PRAGMA cache_size=-8000;
+      PRAGMA foreign_keys=ON;
+    `);
+  } catch (e) {
+    console.warn('[db] PRAGMA tuning skipped:', e);
+  }
   await conn.execute(SCHEMA);
   if (!isNative()) {
     // Persist web store after schema bootstrap.
