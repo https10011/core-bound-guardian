@@ -12,9 +12,12 @@ interface AppLayoutProps {
 
 export default function AppLayout({ activePage, onNavigate, partnerName, children }: AppLayoutProps) {
   return (
-    <div className="flex min-h-screen">
+    <div className="flex min-h-dvh">
       <Sidebar activePage={activePage} onNavigate={onNavigate} partnerName={partnerName} />
-      <main className="flex-1 pb-20 md:pb-0 overflow-x-hidden">
+      <main
+        className="flex-1 md:pb-0 overflow-x-hidden pt-safe px-safe pb-nav md:pb-0"
+        style={{ minHeight: '100dvh' }}
+      >
         {children}
       </main>
       <BottomNav activePage={activePage} onNavigate={onNavigate} />

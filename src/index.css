@@ -23,6 +23,22 @@ html, body {
   touch-action: manipulation;
 }
 
+:root {
+  --kb-h: 0px;
+  --safe-top: env(safe-area-inset-top, 0px);
+  --safe-bottom: env(safe-area-inset-bottom, 0px);
+  /* Height of the mobile bottom nav (used as scroll padding). */
+  --bottom-nav-h: 68px;
+}
+
+/* Make form inputs >=16px so Android WebView never zooms on focus. */
+input, textarea, select {
+  font-size: 16px;
+}
+@media (min-width: 768px) {
+  input, textarea, select { font-size: 14px; }
+}
+
 body {
   min-height: 100vh;
   background: #fff0f5;
@@ -147,6 +163,13 @@ button, [role="button"] {
 
 /* ── Utility classes ─────────────────────────────────────── */
 @layer utilities {
+  .min-h-dvh { min-height: 100vh; min-height: 100dvh; }
+  .h-dvh    { height: 100vh; height: 100dvh; }
+  .pt-safe  { padding-top: env(safe-area-inset-top, 0px); }
+  .pb-safe  { padding-bottom: env(safe-area-inset-bottom, 0px); }
+  .pb-nav   { padding-bottom: calc(var(--bottom-nav-h) + env(safe-area-inset-bottom, 0px)); }
+  .px-safe  { padding-left: env(safe-area-inset-left, 0px); padding-right: env(safe-area-inset-right, 0px); }
+
   .animate-fadeIn   { animation: fadeIn   0.35s cubic-bezier(0.16,1,0.3,1) both; }
   .animate-slideUp  { animation: slideUp  0.40s cubic-bezier(0.16,1,0.3,1) both; }
   .animate-bounceIn { animation: bounceIn 0.50s cubic-bezier(0.16,1,0.3,1) both; }

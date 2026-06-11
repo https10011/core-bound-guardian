@@ -1,9 +1,11 @@
 import { useEffect, useState } from 'react';
-import { LogOut, Download, User, Heart, Shield, Info, ChevronRight } from 'lucide-react';
+import { LogOut, Download, Upload, User, Heart, Shield, Info, ChevronRight } from 'lucide-react';
 import { supabase } from '../lib/supabase';
-import { Relationship, Memory, Note } from '../types';
+import { Relationship } from '../types';
 import GlassCard from '../components/ui/GlassCard';
 import Button from '../components/ui/Button';
+import { exportJson, pickJsonFile } from '../lib/native';
+import { toDisplayUrl } from '../lib/native';
 
 interface SettingsProps {
   userId: string;
@@ -17,6 +19,8 @@ export default function Settings({ userId, userEmail, onSignOut }: SettingsProps
   const [notesCount, setNotesCount] = useState(0);
   const [exporting, setExporting] = useState(false);
   const [signingOut, setSigningOut] = useState(false);
+  const [importing, setImporting] = useState(false);
+  const [importMsg, setImportMsg] = useState<string | null>(null);
 
   useEffect(() => {
     const load = async () => {
@@ -47,14 +51,35 @@ export default function Settings({ userId, userEmail, onSignOut }: SettingsProps
       notes: noteRes.data,
       albums: albumRes.data,
     };
-    const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `memora-export-${new Date().toISOString().split('T')[0]}.json`;
-    a.click();
-    URL.revokeObjectURL(url);
+    await exportJson(`memora-export-${new Date().toISOString().split('T')[0]}.json`, data);
     setExporting(false);
+  };
+
+  const handleImport = async () => {
+    setImportMsg(null);
+    const text = await pickJsonFile();
+    if (!text) return;
+    setImporting(true);
+    try {
+      const data = JSON.parse(text);
+      let imported = 0;
+      const insertAll = async (table: string, rows: any[] | undefined | null) => {
+        if (!Array.isArray(rows)) return;
+        for (const row of rows) {
+          const { id: _id, ...rest } = row;
+          await supabase.from(table).insert({ ...rest, user_id: userId });
+          imported++;
+        }
+      };
+      await insertAll('memories', data.memories);
+      await insertAll('notes', data.notes);
+      await insertAll('albums', data.albums);
+      setImportMsg(`Imported ${imported} item${imported !== 1 ? 's' : ''} successfully ✨`);
+    } catch (e: any) {
+      setImportMsg(`Import failed: ${e?.message ?? 'invalid file'}`);
+    } finally {
+      setImporting(false);
+    }
   };
 
   const handleSignOut = async () => {
@@ -76,7 +101,7 @@ export default function Settings({ userId, userEmail, onSignOut }: SettingsProps
       {/* Profile */}
       <section className="mb-6">
         <h2 className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3">Account</h2>
-        <GlassCard className="overflow-hidden">
+       <GlassCard className="overflow-hidden">
           <div className="p-4 flex items-center gap-3">
             <div className="w-11 h-11 rounded-2xl bg-gradient-to-br from-pink-300 to-rose-300 flex items-center justify-center shadow-md">
               <User size={20} className="text-white" />
@@ -96,7 +121,7 @@ export default function Settings({ userId, userEmail, onSignOut }: SettingsProps
           <GlassCard className="p-5">
             <div className="flex items-center gap-3 mb-4">
               {relationship.avatar_url ? (
-                <img src={relationship.avatar_url} alt={relationship.name} className="w-12 h-12 rounded-2xl object-cover border-2 border-white shadow" />
+                <img src={toDisplayUrl(relationship.avatar_url)} alt={relationship.name} className="w-12 h-12 rounded-2xl object-cover border-2 border-white shadow" loading="lazy" />
               ) : (
                 <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-pink-200 to-rose-300 flex items-center justify-center text-xl shadow">
                   {relationship.name.charAt(0)}
@@ -148,9 +173,29 @@ export default function Settings({ userId, userEmail, onSignOut }: SettingsProps
             </div>
             <ChevronRight size={16} className="text-gray-300 flex-shrink-0" />
           </button>
+          <button
+            onClick={handleImport}
+            disabled={importing}
+            className="w-full flex items-center gap-3 p-4 hover:bg-pink-50/40 transition-colors text-left"
+          >
+            <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-rose-100 to-pink-100 flex items-center justify-center flex-shrink-0">
+              <Upload size={16} className="text-rose-500" />
+            </div>
+            <div className="flex-1">
+              <p className="font-medium text-gray-700 text-sm">Import Backup</p>
+              <p className="text-xs text-gray-400">Restore memories &amp; notes from a JSON export</p>
+            </div>
+            <ChevronRight size={16} className="text-gray-300 flex-shrink-0" />
+          </button>
         </GlassCard>
         {exporting && (
           <p className="text-xs text-pink-400 mt-2 pl-2 animate-pulse">Preparing your export...</p>
+        )}
+        {importing && (
+          <p className="text-xs text-rose-400 mt-2 pl-2 animate-pulse">Importing your backup...</p>
+        )}
+        {importMsg && (
+          <p className="text-xs text-gray-500 mt-2 pl-2">{importMsg}</p>
         )}
       </section>
 

@@ -4,6 +4,7 @@ import { supabase } from '../lib/supabase';
 import { Memory, Note, Relationship } from '../types';
 import { Page } from '../types';
 import GlassCard from '../components/ui/GlassCard';
+import { toDisplayUrl } from '../lib/native';
 
 interface DashboardProps {
   userId: string;
@@ -129,7 +130,7 @@ export default function Dashboard({ userId, onNavigate }: DashboardProps) {
           <div className="flex items-center gap-4">
             <div className="relative flex-shrink-0">
               {relationship.avatar_url ? (
-                <img src={relationship.avatar_url} alt={relationship.name} className="w-16 h-16 rounded-2xl object-cover border-2 border-white/80 shadow-lg" />
+                <img src={toDisplayUrl(relationship.avatar_url)} alt={relationship.name} className="w-16 h-16 rounded-2xl object-cover border-2 border-white/80 shadow-lg" loading="lazy" />
               ) : (
                 <div className="w-16 h-16 rounded-2xl flex items-center justify-center text-2xl font-black shadow-lg"
                   style={{ background: 'linear-gradient(135deg, #fbcfe8, #fda4af)' }}>
@@ -190,7 +191,7 @@ export default function Dashboard({ userId, onNavigate }: DashboardProps) {
               <GlassCard key={memory.id} hover className="overflow-hidden" onClick={() => onNavigate('vault')} delay={200 + i * 70}>
                 {memory.photos[0] && (
                   <div className="h-36 overflow-hidden relative">
-                    <img src={memory.photos[0]} alt={memory.title} className="w-full h-full object-cover transition-transform duration-500 hover:scale-105" />
+                    <img src={toDisplayUrl(memory.photos[0])} alt={memory.title} className="w-full h-full object-cover transition-transform duration-500 hover:scale-105" loading="lazy" />
                     <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent" />
                   </div>
                 )}
