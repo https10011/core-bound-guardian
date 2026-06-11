@@ -5,6 +5,7 @@ import { Relationship } from '../types';
 import GlassCard from '../components/ui/GlassCard';
 import Button from '../components/ui/Button';
 import { exportJson, pickJsonFile } from '../lib/native';
+import { toDisplayUrl } from '../lib/native';
 
 interface SettingsProps {
   userId: string;
@@ -120,7 +121,7 @@ export default function Settings({ userId, userEmail, onSignOut }: SettingsProps
           <GlassCard className="p-5">
             <div className="flex items-center gap-3 mb-4">
               {relationship.avatar_url ? (
-                <img src={(typeof toDisplayUrl !== 'undefined' ? toDisplayUrl(relationship.avatar_url) : relationship.avatar_url)} alt={relationship.name} className="w-12 h-12 rounded-2xl object-cover border-2 border-white shadow" loading="lazy" />
+                <img src={toDisplayUrl(relationship.avatar_url)} alt={relationship.name} className="w-12 h-12 rounded-2xl object-cover border-2 border-white shadow" loading="lazy" />
               ) : (
                 <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-pink-200 to-rose-300 flex items-center justify-center text-xl shadow">
                   {relationship.name.charAt(0)}
