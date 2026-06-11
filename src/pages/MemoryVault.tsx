@@ -5,6 +5,8 @@ import { Memory } from '../types';
 import GlassCard from '../components/ui/GlassCard';
 import Modal from '../components/ui/Modal';
 import Button from '../components/ui/Button';
+import PhotoPicker from '../components/ui/PhotoPicker';
+import { toDisplayUrl, subscribeImageCache } from '../lib/native';
 
 interface MemoryVaultProps {
   userId: string;
@@ -24,7 +26,7 @@ const moodMap: Record<string, string> = Object.fromEntries(MOODS.map(m => [m.val
 
 const emptyForm = {
   title: '', description: '', memory_date: '', location: '', mood: '',
-  photos: '', tags: '', is_favorite: false,
+  photos: [] as string[], tags: '', is_favorite: false,
 };
 
 export default function MemoryVault({ userId }: MemoryVaultProps) {
@@ -37,6 +39,8 @@ export default function MemoryVault({ userId }: MemoryVaultProps) {
   const [form, setForm] = useState(emptyForm);
   const [saving, setSaving] = useState(false);
   const [viewMemory, setViewMemory] = useState<Memory | null>(null);
+  const [, setImgTick] = useState(0);
+  useEffect(() => subscribeImageCache(() => setImgTick((t) => t + 1)), []);
 
   const load = async () => {
     const { data } = await supabase.from('memories').select('*').eq('user_id', userId).order('memory_date', { ascending: false });
@@ -52,7 +56,7 @@ export default function MemoryVault({ userId }: MemoryVaultProps) {
     setForm({
       title: m.title, description: m.description, memory_date: m.memory_date ?? '',
       location: m.location, mood: m.mood,
-      photos: m.photos.join('\n'), tags: m.tags.join(', '), is_favorite: m.is_favorite,
+      photos: [...m.photos], tags: m.tags.join(', '), is_favorite: m.is_favorite,
     });
     setModalOpen(true);
   };
@@ -67,7 +71,7 @@ export default function MemoryVault({ userId }: MemoryVaultProps) {
       memory_date: form.memory_date || null,
       location: form.location,
       mood: form.mood,
-      photos: form.photos.split('\n').map(s => s.trim()).filter(Boolean),
+      photos: form.photos,
       tags: form.tags.split(',').map(s => s.trim()).filter(Boolean),
       is_favorite: form.is_favorite,
       updated_at: new Date().toISOString(),
@@ -148,7 +152,7 @@ export default function MemoryVault({ userId }: MemoryVaultProps) {
             <GlassCard key={memory.id} hover className="overflow-hidden flex flex-col" onClick={() => setViewMemory(memory)}>
               {memory.photos[0] ? (
                 <div className="h-44 overflow-hidden relative">
-                  <img src={memory.photos[0]} alt={memory.title} className="w-full h-full object-cover" />
+                  <img src={toDisplayUrl(memory.photos[0])} alt={memory.title} className="w-full h-full object-cover" loading="lazy" />
                   <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent" />
                   {memory.mood && (
                     <span className="absolute top-2 right-2 w-8 h-8 rounded-xl bg-white/80 backdrop-blur-sm flex items-center justify-center text-base shadow">
@@ -233,10 +237,12 @@ export default function MemoryVault({ userId }: MemoryVaultProps) {
               ))}
             </div>
           </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-600 mb-1.5">Photo URLs</label>
-            <textarea value={form.photos} onChange={e => setForm(f => ({ ...f, photos: e.target.value }))} placeholder="One URL per line..." rows={2} className={`${InputClass} resize-none`} />
-          </div>
+          <PhotoPicker
+            label="Photos"
+            values={form.photos}
+            onChange={(next) => setForm((f) => ({ ...f, photos: next }))}
+            multiple
+          />
           <div>
             <label className="block text-sm font-medium text-gray-600 mb-1.5">Tags</label>
             <input value={form.tags} onChange={e => setForm(f => ({ ...f, tags: e.target.value }))} placeholder="date night, first time, travel..." className={InputClass} />
@@ -261,7 +267,7 @@ export default function MemoryVault({ userId }: MemoryVaultProps) {
             {viewMemory.photos.length > 0 && (
               <div className="flex gap-2 mb-5 overflow-x-auto pb-1">
                 {viewMemory.photos.map((url, i) => (
-                  <img key={i} src={url} alt="" className="h-48 w-auto rounded-xl object-cover flex-shrink-0 shadow-sm" />
+                  <img key={i} src={toDisplayUrl(url)} alt="" className="h-48 w-auto rounded-xl object-cover flex-shrink-0 shadow-sm" loading="lazy" />
                 ))}
               </div>
             )}
