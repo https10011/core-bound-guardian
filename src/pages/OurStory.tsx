@@ -5,6 +5,9 @@ import { Relationship, Album } from '../types';
 import GlassCard from '../components/ui/GlassCard';
 import Modal from '../components/ui/Modal';
 import Button from '../components/ui/Button';
+import PhotoPicker from '../components/ui/PhotoPicker';
+import { toDisplayUrl, subscribeImageCache } from '../lib/native';
+import { useEffect as _useEffect } from 'react';
 
 interface OurStoryProps {
   userId: string;
@@ -33,10 +36,12 @@ export default function OurStory({ userId }: OurStoryProps) {
   const [editProfileOpen, setEditProfileOpen] = useState(false);
   const [albumModalOpen, setAlbumModalOpen] = useState(false);
   const [profileForm, setProfileForm] = useState<Partial<Relationship>>({});
-  const [albumForm, setAlbumForm] = useState({ name: '', owner: 'mine' as 'mine' | 'theirs', cover_url: '', photos: '' });
+  const [albumForm, setAlbumForm] = useState({ name: '', owner: 'mine' as 'mine' | 'theirs', cover_url: '', photos: [] as string[] });
   const [editingAlbum, setEditingAlbum] = useState<Album | null>(null);
   const [saving, setSaving] = useState(false);
   const [newHobby, setNewHobby] = useState('');
+  const [, setImgTick] = useState(0);
+  _useEffect(() => subscribeImageCache(() => setImgTick((t) => t + 1)), []);
 
   const loadData = async () => {
     const [relRes, albumRes] = await Promise.all([
@@ -94,10 +99,10 @@ export default function OurStory({ userId }: OurStoryProps) {
   const openAlbumModal = (album?: Album) => {
     if (album) {
       setEditingAlbum(album);
-      setAlbumForm({ name: album.name, owner: album.owner, cover_url: album.cover_url, photos: album.photos.join('\n') });
+      setAlbumForm({ name: album.name, owner: album.owner, cover_url: album.cover_url, photos: [...album.photos] });
     } else {
       setEditingAlbum(null);
-      setAlbumForm({ name: '', owner: 'mine', cover_url: '', photos: '' });
+      setAlbumForm({ name: '', owner: 'mine', cover_url: '', photos: [] });
     }
     setAlbumModalOpen(true);
   };
@@ -110,7 +115,7 @@ export default function OurStory({ userId }: OurStoryProps) {
       name: albumForm.name,
       owner: albumForm.owner,
       cover_url: albumForm.cover_url,
-      photos: albumForm.photos.split('\n').map(s => s.trim()).filter(Boolean),
+      photos: albumForm.photos,
     };
     if (editingAlbum) {
       await supabase.from('albums').update(payload).eq('id', editingAlbum.id);
@@ -157,7 +162,7 @@ export default function OurStory({ userId }: OurStoryProps) {
             <div className="text-center">
               <div className="relative inline-block">
                 {relationship.avatar_url ? (
-                  <img src={relationship.avatar_url} alt={relationship.name} className="w-24 h-24 rounded-3xl object-cover border-2 border-white shadow-lg" />
+                  <img src={toDisplayUrl(relationship.avatar_url)} alt={relationship.name} className="w-24 h-24 rounded-3xl object-cover border-2 border-white shadow-lg" loading="lazy" />
                 ) : (
                   <div className="w-24 h-24 rounded-3xl bg-gradient-to-br from-pink-200 to-rose-300 flex items-center justify-center text-4xl shadow-lg">
                     {relationship.name.charAt(0)}
@@ -180,7 +185,7 @@ export default function OurStory({ userId }: OurStoryProps) {
             {/* My avatar */}
             <div className="text-center">
               {relationship.my_avatar_url ? (
-                <img src={relationship.my_avatar_url} alt={relationship.my_name} className="w-24 h-24 rounded-3xl object-cover border-2 border-white shadow-lg" />
+                <img src={toDisplayUrl(relationship.my_avatar_url)} alt={relationship.my_name} className="w-24 h-24 rounded-3xl object-cover border-2 border-white shadow-lg" loading="lazy" />
               ) : (
                 <div className="w-24 h-24 rounded-3xl bg-gradient-to-br from-rose-200 to-pink-300 flex items-center justify-center text-4xl shadow-lg">
                   {relationship.my_name ? relationship.my_name.charAt(0) : 'Me'}
@@ -272,7 +277,7 @@ export default function OurStory({ userId }: OurStoryProps) {
                       <GlassCard key={album.id} className="overflow-hidden">
                         {album.cover_url ? (
                           <div className="h-36 overflow-hidden">
-                            <img src={album.cover_url} alt={album.name} className="w-full h-full object-cover" />
+                            <img src={toDisplayUrl(album.cover_url)} alt={album.name} className="w-full h-full object-cover" loading="lazy" />
                           </div>
                         ) : (
                           <div className="h-36 bg-gradient-to-br from-pink-100 to-rose-100 flex items-center justify-center">
@@ -282,7 +287,7 @@ export default function OurStory({ userId }: OurStoryProps) {
                         {album.photos.length > 0 && album.photos[0] !== album.cover_url && (
                           <div className="flex gap-1 p-2">
                             {album.photos.slice(0, 4).map((url, i) => (
-                              <img key={i} src={url} alt="" className="w-12 h-12 rounded-lg object-cover flex-shrink-0" />
+                              <img key={i} src={toDisplayUrl(url)} alt="" className="w-12 h-12 rounded-lg object-cover flex-shrink-0" loading="lazy" />
                             ))}
                             {album.photos.length > 4 && (
                               <div className="w-12 h-12 rounded-lg bg-pink-100 flex items-center justify-center text-xs text-pink-400 font-medium">
@@ -397,15 +402,19 @@ export default function OurStory({ userId }: OurStoryProps) {
               <label className="block text-sm font-medium text-gray-600 mb-1.5">Their Birthday</label>
               <input type="date" value={profileForm.birthday ?? ''} onChange={e => setProfileForm(f => ({ ...f, birthday: e.target.value }))} className={InputClass} />
             </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-600 mb-1.5">Their Photo URL</label>
-              <input value={profileForm.avatar_url ?? ''} onChange={e => setProfileForm(f => ({ ...f, avatar_url: e.target.value }))} placeholder="https://..." className={InputClass} />
-            </div>
+          <PhotoPicker
+            label="Their Photo"
+            multiple={false}
+            values={profileForm.avatar_url ? [profileForm.avatar_url] : []}
+            onChange={(next) => setProfileForm((f) => ({ ...f, avatar_url: next[0] ?? '' }))}
+          />
           </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-600 mb-1.5">My Photo URL</label>
-            <input value={profileForm.my_avatar_url ?? ''} onChange={e => setProfileForm(f => ({ ...f, my_avatar_url: e.target.value }))} placeholder="https://..." className={InputClass} />
-          </div>
+          <PhotoPicker
+            label="My Photo"
+            multiple={false}
+            values={profileForm.my_avatar_url ? [profileForm.my_avatar_url] : []}
+            onChange={(next) => setProfileForm((f) => ({ ...f, my_avatar_url: next[0] ?? '' }))}
+          />
           <div>
             <label className="block text-sm font-medium text-gray-600 mb-1.5">Bio / About Them</label>
             <textarea value={profileForm.bio ?? ''} onChange={e => setProfileForm(f => ({ ...f, bio: e.target.value }))} placeholder="A little about your partner..." rows={2} className={`${InputClass} resize-none`} />
@@ -479,14 +488,17 @@ export default function OurStory({ userId }: OurStoryProps) {
               ))}
             </div>
           </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-600 mb-1.5">Cover Photo URL</label>
-            <input value={albumForm.cover_url} onChange={e => setAlbumForm(f => ({ ...f, cover_url: e.target.value }))} placeholder="https://..." className={InputClass} />
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-600 mb-1.5">Photo URLs</label>
-            <textarea value={albumForm.photos} onChange={e => setAlbumForm(f => ({ ...f, photos: e.target.value }))} placeholder="One URL per line..." rows={4} className={`${InputClass} resize-none`} />
-          </div>
+          <PhotoPicker
+            label="Cover Photo"
+            multiple={false}
+            values={albumForm.cover_url ? [albumForm.cover_url] : []}
+            onChange={(next) => setAlbumForm((f) => ({ ...f, cover_url: next[0] ?? '' }))}
+          />
+          <PhotoPicker
+            label="Album Photos"
+            values={albumForm.photos}
+            onChange={(next) => setAlbumForm((f) => ({ ...f, photos: next }))}
+          />
           <div className="flex justify-end gap-3">
             <Button variant="ghost" onClick={() => setAlbumModalOpen(false)}>Cancel</Button>
             <Button onClick={saveAlbum} disabled={saving || !albumForm.name.trim()}>
