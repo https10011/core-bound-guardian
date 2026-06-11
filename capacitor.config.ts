@@ -24,6 +24,20 @@ const config: CapacitorConfig = {
       androidIsEncryption: false,
       iosIsEncryption: false,
     },
+    Camera: {
+      // Android 13+ uses scoped media permissions automatically (READ_MEDIA_IMAGES).
+      // We don't request camera permission unless capturePhoto() is called.
+      androidScaleType: 'CENTER_CROP',
+    },
+    Keyboard: {
+      resize: 'native',
+      resizeOnFullScreen: true,
+    },
+    StatusBar: {
+      style: 'LIGHT',
+      backgroundColor: '#fff0f5',
+      overlaysWebView: false,
+    },
     SplashScreen: {
       launchShowDuration: 400,
       launchAutoHide: true,
