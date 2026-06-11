@@ -100,7 +100,7 @@ export default function Settings({ userId, userEmail, onSignOut }: SettingsProps
       {/* Profile */}
       <section className="mb-6">
         <h2 className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3">Account</h2>
-        <GlassCard className="overflow-hidden">
+       <GlassCard className="overflow-hidden">
           <div className="p-4 flex items-center gap-3">
             <div className="w-11 h-11 rounded-2xl bg-gradient-to-br from-pink-300 to-rose-300 flex items-center justify-center shadow-md">
               <User size={20} className="text-white" />
@@ -120,7 +120,7 @@ export default function Settings({ userId, userEmail, onSignOut }: SettingsProps
           <GlassCard className="p-5">
             <div className="flex items-center gap-3 mb-4">
               {relationship.avatar_url ? (
-                <img src={relationship.avatar_url} alt={relationship.name} className="w-12 h-12 rounded-2xl object-cover border-2 border-white shadow" />
+                <img src={(typeof toDisplayUrl !== 'undefined' ? toDisplayUrl(relationship.avatar_url) : relationship.avatar_url)} alt={relationship.name} className="w-12 h-12 rounded-2xl object-cover border-2 border-white shadow" loading="lazy" />
               ) : (
                 <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-pink-200 to-rose-300 flex items-center justify-center text-xl shadow">
                   {relationship.name.charAt(0)}
