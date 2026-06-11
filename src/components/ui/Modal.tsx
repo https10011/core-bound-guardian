@@ -27,7 +27,13 @@ export default function Modal({ isOpen, onClose, title, children, size = 'md' }:
   const sizeClass = { sm: 'max-w-sm', md: 'max-w-lg', lg: 'max-w-2xl', xl: 'max-w-4xl' }[size];
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+    <div
+      className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4"
+      style={{
+        paddingTop: 'env(safe-area-inset-top, 0px)',
+        paddingBottom: 'calc(env(safe-area-inset-bottom, 0px) + var(--kb-h, 0px))',
+      }}
+    >
       {/* Backdrop */}
       <div
         className="absolute inset-0 animate-fadeIn"
@@ -39,7 +45,7 @@ export default function Modal({ isOpen, onClose, title, children, size = 'md' }:
 
       {/* Modal */}
       <div
-        className={`relative w-full ${sizeClass} rounded-3xl overflow-hidden animate-bounceIn`}
+        className={`relative w-full ${sizeClass} rounded-t-3xl sm:rounded-3xl overflow-hidden animate-bounceIn max-h-[92dvh] flex flex-col`}
         style={{
           background: 'rgba(255, 244, 250, 0.98)',
           border: '1px solid rgba(255, 168, 210, 0.55)',
@@ -65,7 +71,7 @@ export default function Modal({ isOpen, onClose, title, children, size = 'md' }:
           </button>
         </div>
 
-        <div className="overflow-y-auto max-h-[80vh]">
+        <div className="overflow-y-auto overscroll-contain flex-1" style={{ WebkitOverflowScrolling: 'touch' as any }}>
           {children}
         </div>
       </div>
