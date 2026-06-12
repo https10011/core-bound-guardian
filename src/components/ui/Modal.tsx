@@ -26,6 +26,11 @@ export default function Modal({ isOpen, onClose, title, children, size = 'md' }:
 
   const sizeClass = { sm: 'max-w-sm', md: 'max-w-lg', lg: 'max-w-2xl', xl: 'max-w-4xl' }[size];
 
+  // Compute available height once so the modal never grows past the visible
+  // viewport — accounts for status bar, gesture bar, and the soft keyboard.
+  const availableHeight =
+    'calc(100dvh - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px) - var(--kb-h, 0px))';
+
   return (
     <div
       className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4"
@@ -45,8 +50,9 @@ export default function Modal({ isOpen, onClose, title, children, size = 'md' }:
 
       {/* Modal */}
       <div
-        className={`relative w-full ${sizeClass} rounded-t-3xl sm:rounded-3xl overflow-hidden animate-bounceIn max-h-[92dvh] flex flex-col`}
+        className={`relative w-full ${sizeClass} rounded-t-3xl sm:rounded-3xl overflow-hidden animate-bounceIn flex flex-col`}
         style={{
+          maxHeight: availableHeight,
           background: 'rgba(255, 244, 250, 0.98)',
           border: '1px solid rgba(255, 168, 210, 0.55)',
           boxShadow:

@@ -59,32 +59,85 @@ export function subscribeImageCache(cb: () => void): () => void {
   return () => cacheListeners.delete(cb);
 }
 
-/** Native multi-image picker. Returns an array of stored paths (relative). */
+/** Multi-image picker.
+ *
+ *  We deliberately use an HTML <input type="file" accept="image/*"> on BOTH
+ *  web and native. On Android WebView this opens the system file chooser
+ *  (Storage Access Framework / Documents UI), which lets users browse
+ *  Downloads, Documents, Pictures, SD card, and — through the "Pictures" or
+ *  "Photos" shortcut — the gallery. The previous Camera.pickImages()
+ *  implementation routed users straight into Google Photos with no way out;
+ *  this is what the user explicitly asked to fix.
+ *
+ *  On native, the picked files are copied into app-private storage so the
+ *  paths remain valid after the source URI is revoked. */
 export async function pickImages(opts?: { multiple?: boolean; limit?: number }): Promise<string[]> {
   const multiple = opts?.multiple ?? true;
   const limit = opts?.limit ?? 10;
 
+  const files = await pickImageFiles(multiple);
+  if (!files.length) return [];
+  const slice = multiple ? files.slice(0, limit) : files.slice(0, 1);
+
   if (!isNative) {
-    return pickImagesViaInput(multiple);
+    const out: string[] = [];
+    for (const f of slice) out.push(await blobToDataUrl(f));
+    return out;
   }
 
+  const saved: string[] = [];
+  for (const f of slice) {
+    const stored = await persistFileToAppStorage(f);
+    if (stored) saved.push(stored);
+  }
+  return saved;
+}
+
+/** Show the native Android system file chooser and resolve with the selected
+ *  File objects. Works in browser preview too. */
+function pickImageFiles(multiple: boolean): Promise<File[]> {
+  return new Promise((resolve) => {
+    const input = document.createElement('input');
+    input.type = 'file';
+    // Broad accept so Android shows the full Files UI (Downloads, SD card,
+    // Documents, etc.) — Android filters image MIME types automatically.
+    input.accept = 'image/*';
+    input.multiple = multiple;
+    input.style.position = 'fixed';
+    input.style.left = '-9999px';
+    input.onchange = () => {
+      resolve(Array.from(input.files ?? []));
+      input.remove();
+    };
+    input.oncancel = () => {
+      resolve([]);
+      input.remove();
+    };
+    document.body.appendChild(input);
+    input.click();
+  });
+}
+
+async function persistFileToAppStorage(file: File): Promise<string | null> {
   try {
-    const result = await Camera.pickImages({ quality: 85, limit });
-    const photos = multiple ? result.photos : result.photos.slice(0, 1);
-    const saved: string[] = [];
-    for (const p of photos) {
-      const stored = await copyToAppStorage(p.webPath ?? p.path ?? '');
-      if (stored) saved.push(stored);
-    }
-    return saved;
-  } catch (e: any) {
-    if (String(e?.message || '').toLowerCase().includes('cancel')) return [];
-    console.warn('pickImages failed:', e);
-    return [];
+    await Filesystem.mkdir({ directory: Directory.Data, path: IMG_DIR, recursive: true }).catch(() => {});
+    const ext = (file.name.split('.').pop() || file.type.split('/')[1] || 'jpg')
+      .toLowerCase()
+      .replace('jpeg', 'jpg')
+      .slice(0, 5);
+    const name = `${IMG_DIR}/${Date.now()}-${Math.random().toString(36).slice(2, 8)}.${ext}`;
+    const dataUrl = await blobToDataUrl(file);
+    const base64 = dataUrl.split(',')[1];
+    await Filesystem.writeFile({ directory: Directory.Data, path: name, data: base64 });
+    void resolveAndCache(name);
+    return name;
+  } catch (e) {
+    console.warn('persistFileToAppStorage failed', e);
+    return null;
   }
 }
 
-/** Take a single photo with the camera (separate UI affordance if needed). */
+/** Take a single photo with the device camera (optional secondary action). */
 export async function capturePhoto(): Promise<string | null> {
   if (!isNative) return null;
   try {
@@ -130,23 +183,6 @@ function blobToDataUrl(blob: Blob): Promise<string> {
   });
 }
 
-/** Browser fallback used in dev preview — converts files to data URLs. */
-function pickImagesViaInput(multiple: boolean): Promise<string[]> {
-  return new Promise((resolve) => {
-    const input = document.createElement('input');
-    input.type = 'file';
-    input.accept = 'image/*';
-    input.multiple = multiple;
-    input.onchange = async () => {
-      const files = Array.from(input.files ?? []);
-      const out: string[] = [];
-      for (const f of files) out.push(await blobToDataUrl(f));
-      resolve(out);
-    };
-    input.oncancel = () => resolve([]);
-    input.click();
-  });
-}
 
 /** Delete a stored image from app storage. Best-effort. */
 export async function removeStoredImage(stored: string) {

@@ -14,10 +14,7 @@ export default function AppLayout({ activePage, onNavigate, partnerName, childre
   return (
     <div className="flex min-h-dvh">
       <Sidebar activePage={activePage} onNavigate={onNavigate} partnerName={partnerName} />
-      <main
-        className="flex-1 md:pb-0 overflow-x-hidden pt-safe px-safe pb-nav md:pb-0"
-        style={{ minHeight: '100dvh' }}
-      >
+      <main className="flex-1 overflow-x-hidden pt-safe px-safe pb-nav md:pb-0 w-full">
         {children}
       </main>
       <BottomNav activePage={activePage} onNavigate={onNavigate} />
