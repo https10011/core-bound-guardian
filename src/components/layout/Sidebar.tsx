@@ -18,7 +18,7 @@ const navItems = [
 export default function Sidebar({ activePage, onNavigate, partnerName }: SidebarProps) {
   return (
     <aside
-      className="hidden md:flex flex-col w-64 h-screen sticky top-0 z-20"
+      className="hidden md:flex flex-col w-64 h-dvh sticky top-0 z-20 overflow-y-auto"
       style={{
         // PERF: removed backdrop-filter (Sidebar only renders on desktop ≥md,
         // but the same compositor stack used to be created on Android tablets
