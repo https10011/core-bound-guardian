@@ -7,7 +7,13 @@ export default function Auth() {
   const { isSignUp, setIsSignUp, email, setEmail, password, setPassword, loading, error, message, handleSubmit } = useAuthForm();
 
   return (
-    <div className="min-h-screen flex items-center justify-center p-4 relative overflow-hidden">
+    <div
+      className="min-h-dvh flex items-center justify-center p-4 relative"
+      style={{
+        paddingTop: 'max(1rem, env(safe-area-inset-top))',
+        paddingBottom: 'max(1rem, env(safe-area-inset-bottom))',
+      }}
+    >
 
       {/* Background floating hearts */}
       <div className="absolute inset-0 pointer-events-none select-none overflow-hidden">
