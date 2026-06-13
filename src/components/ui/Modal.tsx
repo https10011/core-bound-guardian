@@ -26,17 +26,22 @@ export default function Modal({ isOpen, onClose, title, children, size = 'md' }:
 
   const sizeClass = { sm: 'max-w-sm', md: 'max-w-lg', lg: 'max-w-2xl', xl: 'max-w-4xl' }[size];
 
-  // Compute available height once so the modal never grows past the visible
-  // viewport — accounts for status bar, gesture bar, and the soft keyboard.
+  // Modal never grows past the visible viewport — accounts for status bar,
+  // gesture bar, and the soft keyboard.
   const availableHeight =
-    'calc(100dvh - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px) - var(--kb-h, 0px))';
+    'calc(100dvh - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px) - var(--kb-h, 0px) - 16px)';
 
   return (
     <div
       className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4"
       style={{
         paddingTop: 'env(safe-area-inset-top, 0px)',
+        // Bottom inset reserves space for the soft keyboard so the modal
+        // (and its action buttons) lift above it.
         paddingBottom: 'calc(env(safe-area-inset-bottom, 0px) + var(--kb-h, 0px))',
+        // Anchor to the visible viewport top so the modal never renders
+        // partially off-screen when Android resizes the WebView.
+        height: '100dvh',
       }}
     >
       {/* Backdrop */}

@@ -99,9 +99,13 @@ function pickImageFiles(multiple: boolean): Promise<File[]> {
   return new Promise((resolve) => {
     const input = document.createElement('input');
     input.type = 'file';
-    // Broad accept so Android shows the full Files UI (Downloads, SD card,
-    // Documents, etc.) — Android filters image MIME types automatically.
-    input.accept = 'image/*';
+    // IMPORTANT: `accept="image/*"` on Android WebView opens the Google
+    // Photos picker with no way to reach Downloads / Documents / SD card.
+    // Listing concrete image mime types instead makes Android open the
+    // Storage Access Framework (Documents UI) which exposes every folder
+    // and gallery on the device. This is what the user explicitly asked for.
+    input.accept =
+      'image/jpeg,image/jpg,image/png,image/webp,image/gif,image/bmp,image/heic,image/heif';
     input.multiple = multiple;
     input.style.position = 'fixed';
     input.style.left = '-9999px';
