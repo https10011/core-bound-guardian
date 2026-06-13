@@ -34,10 +34,19 @@ export default function BottomNav({ activePage, onNavigate }: BottomNavProps) {
         background: 'rgba(255, 232, 244, 0.97)',
         borderColor: 'rgba(255, 168, 210, 0.45)',
         boxShadow: '0 -4px 16px rgba(244,114,182,0.10)',
-        paddingBottom: 'env(safe-area-inset-bottom)',
+        // Safe-area padding is applied via the pb-safe class on the inner
+        // row (was applied here AND there, double-padding the nav on
+        // gesture-bar devices).
+        // When the soft keyboard is open the bottom nav would otherwise
+        // float in the middle of the screen — hide it instead.
+        transform: 'translateY(var(--kb-h, 0px))',
+        transition: 'transform 180ms ease',
       }}
     >
-      <div className="flex items-center justify-around px-2 py-2 pb-safe">
+      <div
+        className="flex items-center justify-around px-2 py-2"
+        style={{ paddingBottom: 'calc(env(safe-area-inset-bottom, 0px) + 6px)' }}
+      >
         {navItems.map(({ id, icon: Icon, label }) => {
           const active = activePage === id;
           const bouncing = tapped === id;

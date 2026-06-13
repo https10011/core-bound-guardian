@@ -30,7 +30,11 @@ const config: CapacitorConfig = {
       androidScaleType: 'CENTER_CROP',
     },
     Keyboard: {
-      resize: 'native',
+      // We resize the WebView ourselves via --kb-h CSS var so we can keep
+      // the bottom nav, modals and form actions reachable on Android.
+      // 'none' tells Android NOT to resize the WebView, so 100dvh stays
+      // accurate and we subtract --kb-h where it matters.
+      resize: 'none',
       resizeOnFullScreen: true,
     },
     StatusBar: {
