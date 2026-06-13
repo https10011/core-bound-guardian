@@ -31,6 +31,18 @@ html, body {
   --bottom-nav-h: 68px;
 }
 
+/* Reserve scroll room so the focused input is never glued to the bottom
+   of the visible viewport when the keyboard opens. */
+html {
+  scroll-padding-bottom: calc(var(--kb-h, 0px) + 96px);
+  scroll-padding-top: calc(env(safe-area-inset-top, 0px) + 16px);
+}
+
+/* When the soft keyboard is open we shrink the page bottom padding so the
+   focused input + save button aren't pushed under an invisible spacer
+   (the bottom nav is hidden via translateY in BottomNav.tsx). */
+html.kb-open .pb-nav { padding-bottom: 16px; }
+
 /* Make form inputs >=16px so Android WebView never zooms on focus. */
 input, textarea, select {
   font-size: 16px;
